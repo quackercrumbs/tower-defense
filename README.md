@@ -13,6 +13,12 @@ rustup component add llvm-tools-preview
 
 ```
 
+
+## Quick Start
+```
+ cargo run --features bevy/dynamic
+```
+
 ## References
 | Source | Notes |
 | -- | -- |
