@@ -2,14 +2,18 @@ use bevy::prelude::*;
 use bevy_flycam::PlayerPlugin;
 use bevy_rapier3d::prelude::*;
 
+mod debug;
+use debug::DebugPlugin;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(DebugPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_startup_system(setup_world)
-        .add_system(print_collider_altitude)
+        // .add_system(print_collider_altitude)
         // .add_system(print_transform_altitude)
         .run();
 }

@@ -9,3 +9,4 @@ edition = "2021"
 bevy = { version = "0.6.1", features = ["dynamic"] }
 bevy_flycam = { version = "0.6.0" }
 bevy_rapier3d = { version = "0.12.1" }
+bevy-inspector-egui = { version = "0.9" }
