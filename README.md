@@ -23,3 +23,4 @@ rustup component add llvm-tools-preview
 | Source | Notes |
 | -- | -- |
 | https://bevyengine.org/learn/book/getting-started/setup/ | Setup Guide |
+| https://rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy | Rapier Docs |

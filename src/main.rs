@@ -61,15 +61,20 @@ fn setup_world(
             position: Vec3::new(0.0, -ground_height, 0.0).into(),
             ..ColliderBundle::default()
         })
-        // .insert_bundle(PbrBundle {
-        //     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube {
-        //         size: ground_size,
-        //     })),
-        //     material: materials.add(Color::rgb(0.5, 0.5, 0.).into()),
-        //     ..Default::default()
-        // })
-        .insert(ColliderDebugRender::default())
+        .with_children(|parent| {
+            parent
+                .spawn()
+                .insert_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(bevy::prelude::shape::Plane {
+                        size: ground_size,
+                    })),
+                    material: materials.add(Color::rgb(0.5, 0.5, 0.).into()),
+                    transform: Transform::from_translation(Vec3::new(0.0, ground_height, 0.0)),
+                    ..Default::default()
+                });
+        })
         .insert(ColliderPositionSync::Discrete);
+
 
     // Create cube, Build the rigid body.
     let cube_size = 0.5;
@@ -94,18 +99,4 @@ fn setup_world(
         // commented out debug mesh from bevy_rapier
         // .insert(ColliderDebugRender::with_id(color))
         .insert(ColliderPositionSync::Discrete);
-}
-
-fn print_collider_altitude(positions: Query<&ColliderPositionComponent>) {
-    for rb_pos in positions.iter() {
-        println!("Ball altitude: {}", rb_pos.translation.vector.y);
-    }
-}
-
-fn print_transform_altitude(transforms: Query<&GlobalTransform>) {
-
-    for t in transforms.iter() {
-        println!("transform: {}", t.translation.y)
-    }
-
 }
