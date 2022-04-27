@@ -1,8 +1,15 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::{WorldInspectorPlugin, widgets::ResourceInspector, Inspectable, InspectorPlugin};
 use bevy_inspector_egui_rapier::InspectableRapierPlugin;
 
+use crate::EnemyConfiguration;
+
 pub struct DebugPlugin;
+
+#[derive(Inspectable, Default)]
+struct Data {
+    enemy_configuration: ResourceInspector<EnemyConfiguration>,
+}
 
 impl Plugin for DebugPlugin {
 
@@ -10,6 +17,7 @@ impl Plugin for DebugPlugin {
         if cfg!(debug_assertions) {
             app.add_plugin(WorldInspectorPlugin::new());
             app.add_plugin(InspectableRapierPlugin);
+            app.add_plugin(InspectorPlugin::<Data>::new());
         }
     }
 

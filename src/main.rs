@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_flycam::PlayerPlugin;
+use bevy_inspector_egui::Inspectable;
 use bevy_rapier3d::prelude::*;
 
 mod debug;
@@ -13,8 +14,9 @@ fn main() {
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierRenderPlugin)
         .add_startup_system(setup_world)
-        // .add_system(print_collider_altitude)
-        // .add_system(print_transform_altitude)
+        .insert_resource(EnemySpawnTimer(Timer::from_seconds(2.0, true)))
+        .insert_resource(EnemyConfiguration{ max_count: 10 })
+        .add_system(spawn_enemies_interval)
         .run();
 }
 
@@ -117,4 +119,28 @@ fn setup_world(
             });
         })
         .insert(ColliderPositionSync::Discrete);
+}
+
+struct EnemySpawnTimer(Timer);
+
+#[derive(Inspectable)]
+struct EnemyConfiguration {
+    max_count: usize,
+}
+#[derive(Component)]
+struct Enemy;
+
+fn spawn_enemies_interval(
+    time: Res<Time>,
+    enemy_config: Res<EnemyConfiguration>,
+    enemies: Query<&Enemy>,
+    mut enemy_timer: ResMut<EnemySpawnTimer>,
+    mut commands: Commands,
+) {
+    if  enemies.iter().len() < enemy_config.max_count {
+        if enemy_timer.0.tick(time.delta()).just_finished() {
+            info!("Spawn enemy");
+            commands.spawn().insert(Enemy);
+        }
+    }
 }
