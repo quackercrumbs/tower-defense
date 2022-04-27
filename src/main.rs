@@ -76,27 +76,45 @@ fn setup_world(
         .insert(ColliderPositionSync::Discrete);
 
 
-    // Create cube, Build the rigid body.
+    // Create castle, use cube
     let cube_size = 0.5;
     commands
         .spawn()
         .insert_bundle(RigidBodyBundle {
-            position: Vec3::new(1., 3., 0.).into(),
+            position: Vec3::new(0., cube_size, 0.).into(),
+            body_type: RigidBodyTypeComponent(RigidBodyType::Dynamic),
             ..RigidBodyBundle::default()
         })
         .insert_bundle(ColliderBundle {
             shape: ColliderShape::cuboid(cube_size, cube_size, cube_size).into(),
             ..ColliderBundle::default()
         })
-        // give it a mesh different from the collider shape
-        .insert_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube {
-                size: cube_size * 2.,
-            })),
-            material: materials.add(Color::rgb(1., 0., 0.).into()),
-            ..Default::default()
+        // uncomment to view collider shape (make sure that the dimension and shape matches the colliders shape!)
+        // .insert_bundle(PbrBundle {
+        //     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
+        //         min_x: -cube_size,
+        //         max_x: cube_size,
+        //         min_y: -cube_size,
+        //         max_y: cube_size,
+        //         min_z: -cube_size,
+        //         max_z: cube_size,
+        //     })),
+        //     material: materials.add(Color::rgb(0., 0.1, 0.2).into()),
+        //     ..Default::default()
+        // })
+        .with_children(|parent| {
+            parent.spawn().insert_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
+                    min_x: -cube_size,
+                    max_x: cube_size,
+                    min_y: -cube_size,
+                    max_y: cube_size * 10.,
+                    min_z: -cube_size,
+                    max_z: cube_size,
+                })),
+                material: materials.add(Color::rgb(1., 0., 0.).into()),
+                ..Default::default()
+            });
         })
-        // commented out debug mesh from bevy_rapier
-        // .insert(ColliderDebugRender::with_id(color))
         .insert(ColliderPositionSync::Discrete);
 }
