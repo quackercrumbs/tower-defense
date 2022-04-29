@@ -15,7 +15,7 @@ fn main() {
         .add_plugin(RapierRenderPlugin)
         .add_startup_system(setup_world)
         .insert_resource(EnemySpawnTimer(Timer::from_seconds(2.0, true)))
-        .insert_resource(EnemyConfiguration{ max_count: 10 })
+        .insert_resource(EnemyConfiguration{ max_count: 10, size: 0.25 })
         .add_system(spawn_enemies_interval)
         .run();
 }
@@ -126,6 +126,7 @@ struct EnemySpawnTimer(Timer);
 #[derive(Inspectable)]
 struct EnemyConfiguration {
     max_count: usize,
+    size: f32,
 }
 #[derive(Component)]
 struct Enemy;
@@ -135,12 +136,32 @@ fn spawn_enemies_interval(
     enemy_config: Res<EnemyConfiguration>,
     enemies: Query<&Enemy>,
     mut enemy_timer: ResMut<EnemySpawnTimer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
     if  enemies.iter().len() < enemy_config.max_count {
         if enemy_timer.0.tick(time.delta()).just_finished() {
             info!("Spawn enemy");
-            commands.spawn().insert(Enemy);
+            commands.spawn().insert(Enemy)
+                .insert_bundle(RigidBodyBundle {
+                    position: Vec3::new(4.0, 3.0, 4.0).into(),
+                    ..Default::default()
+                })
+                .insert_bundle(ColliderBundle {
+                    shape: ColliderShape::cuboid(enemy_config.size, enemy_config.size, enemy_config.size).into(),
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent.spawn().insert_bundle(PbrBundle {
+                        mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube {
+                            size: enemy_config.size * 2.0
+                        })),
+                        material: materials.add(Color::rgb(0.1, 0.1, 0.4).into()),
+                        ..Default::default()
+                    });
+                })
+                .insert(ColliderPositionSync::Discrete);
         }
     }
 }
