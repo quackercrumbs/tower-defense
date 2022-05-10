@@ -15,7 +15,7 @@ fn main() {
         .add_plugin(RapierRenderPlugin)
         .add_startup_system(setup_world)
         .insert_resource(EnemySpawnTimer(Timer::from_seconds(2.0, true)))
-        .insert_resource(EnemyConfiguration{ max_count: 10, size: 0.25 })
+        .insert_resource(EnemyConfiguration{ max_count: 2, size: 0.25 })
         .add_system(spawn_enemies_interval)
         .run();
 }
@@ -94,12 +94,9 @@ fn setup_world(
         // uncomment to view collider shape (make sure that the dimension and shape matches the colliders shape!)
         // .insert_bundle(PbrBundle {
         //     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
-        //         min_x: -cube_size,
-        //         max_x: cube_size,
-        //         min_y: -cube_size,
-        //         max_y: cube_size,
-        //         min_z: -cube_size,
-        //         max_z: cube_size,
+        //         min_x: -cube_size, max_x: cube_size,
+        //         min_y: -cube_size, max_y: cube_size,
+        //         min_z: -cube_size, max_z: cube_size,
         //     })),
         //     material: materials.add(Color::rgb(0., 0.1, 0.2).into()),
         //     ..Default::default()
@@ -143,13 +140,23 @@ fn spawn_enemies_interval(
     if  enemies.iter().len() < enemy_config.max_count {
         if enemy_timer.0.tick(time.delta()).just_finished() {
             info!("Spawn enemy");
-            commands.spawn().insert(Enemy)
-                .insert_bundle(RigidBodyBundle {
-                    position: Vec3::new(4.0, 3.0, 4.0).into(),
-                    ..Default::default()
-                })
+            commands.spawn()
+                .insert(Enemy)
                 .insert_bundle(ColliderBundle {
                     shape: ColliderShape::cuboid(enemy_config.size, enemy_config.size, enemy_config.size).into(),
+                    // the location of where they spawn
+                    // note: the `y` value matches half the height of the ground collider. might want to use some configuration to drive this?
+                    position: Vec3::new(4.0, 0.25,3.0).into(),
+                    ..Default::default()
+                })
+                // uncomment to view collider shape (make sure that the dimension and shape matches the colliders shape!)
+                .insert_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
+                        min_x: -enemy_config.size, max_x: enemy_config.size,
+                        min_y: -enemy_config.size, max_y: enemy_config.size,
+                        min_z: -enemy_config.size, max_z: enemy_config.size,
+                    })),
+                    material: materials.add(Color::rgb(0., 0.1, 0.2).into()),
                     ..Default::default()
                 })
                 .with_children(|parent| {
