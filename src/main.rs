@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_flycam::PlayerPlugin;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier3d::prelude::*;
+use std::ops::{Sub, Mul, Add};
 
 mod debug;
 use debug::DebugPlugin;
@@ -15,8 +16,9 @@ fn main() {
         .add_plugin(RapierRenderPlugin)
         .add_startup_system(setup_world)
         .insert_resource(EnemySpawnTimer(Timer::from_seconds(2.0, true)))
-        .insert_resource(EnemyConfiguration{ max_count: 2, size: 0.25 })
+        .insert_resource(EnemyConfiguration{ max_count: 2, size: 0.25, speed: 8.0 })
         .add_system(spawn_enemies_interval)
+        .add_system(move_enemies)
         .run();
 }
 
@@ -68,7 +70,7 @@ fn setup_world(
                 .spawn()
                 .insert_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Plane {
-                        size: ground_size,
+                        size: ground_size * 2.,
                     })),
                     material: materials.add(Color::rgb(0.5, 0.5, 0.).into()),
                     transform: Transform::from_translation(Vec3::new(0.0, ground_height, 0.0)),
@@ -124,6 +126,7 @@ struct EnemySpawnTimer(Timer);
 struct EnemyConfiguration {
     max_count: usize,
     size: f32,
+    speed: f32,
 }
 #[derive(Component)]
 struct Enemy;
@@ -146,19 +149,19 @@ fn spawn_enemies_interval(
                     shape: ColliderShape::cuboid(enemy_config.size, enemy_config.size, enemy_config.size).into(),
                     // the location of where they spawn
                     // note: the `y` value matches half the height of the ground collider. might want to use some configuration to drive this?
-                    position: Vec3::new(4.0, 0.25,3.0).into(),
+                    position: Vec3::new(18.0, 0.25,16.0).into(),
                     ..Default::default()
                 })
                 // uncomment to view collider shape (make sure that the dimension and shape matches the colliders shape!)
-                .insert_bundle(PbrBundle {
-                    mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
-                        min_x: -enemy_config.size, max_x: enemy_config.size,
-                        min_y: -enemy_config.size, max_y: enemy_config.size,
-                        min_z: -enemy_config.size, max_z: enemy_config.size,
-                    })),
-                    material: materials.add(Color::rgb(0., 0.1, 0.2).into()),
-                    ..Default::default()
-                })
+                // .insert_bundle(PbrBundle {
+                //     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
+                //         min_x: -enemy_config.size, max_x: enemy_config.size,
+                //         min_y: -enemy_config.size, max_y: enemy_config.size,
+                //         min_z: -enemy_config.size, max_z: enemy_config.size,
+                //     })),
+                //     material: materials.add(Color::rgb(0., 0.1, 0.2).into()),
+                //     ..Default::default()
+                // })
                 .with_children(|parent| {
                     parent.spawn().insert_bundle(PbrBundle {
                         mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube {
@@ -171,4 +174,20 @@ fn spawn_enemies_interval(
                 .insert(ColliderPositionSync::Discrete);
         }
     }
+}
+
+fn move_enemies(
+    enemy_config: Res<EnemyConfiguration>,
+    time: Res<Time>,
+    mut enemies: Query<&mut ColliderPositionComponent, With<Enemy>>,
+) {
+    let target = nalgebra::Translation3::new(0., 0.25, 0.);
+    enemies.for_each_mut(|mut enemy| {
+        let distance_vector = target.vector.sub(enemy.translation.vector);
+        let len = distance_vector.magnitude();
+        if len >= 5. {
+            let new_pos = distance_vector.normalize().mul(enemy_config.speed * time.delta_seconds());
+            enemy.translation.vector = enemy.translation.vector.add(new_pos);
+        }
+    })
 }
