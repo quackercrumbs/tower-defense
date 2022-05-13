@@ -84,13 +84,9 @@ fn setup_world(
     let cube_size = 0.5;
     commands
         .spawn()
-        .insert_bundle(RigidBodyBundle {
-            position: Vec3::new(0., cube_size, 0.).into(),
-            body_type: RigidBodyTypeComponent(RigidBodyType::Dynamic),
-            ..RigidBodyBundle::default()
-        })
         .insert_bundle(ColliderBundle {
             shape: ColliderShape::cuboid(cube_size, cube_size, cube_size).into(),
+            position: Vec3::new(0.0, cube_size, 0.0).into(),
             ..ColliderBundle::default()
         })
         // uncomment to view collider shape (make sure that the dimension and shape matches the colliders shape!)
