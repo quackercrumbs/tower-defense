@@ -13,7 +13,6 @@ fn main() {
         .add_plugin(DebugPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup_world)
         .insert_resource(EnemySpawnTimer(Timer::from_seconds(2.0, true)))
         .insert_resource(EnemyConfiguration{ max_count: 1, size: 0.25, speed: 3.0 })
@@ -21,6 +20,12 @@ fn main() {
         .add_system(move_enemies)
         .run();
 }
+
+#[derive(Component)]
+struct Ground;
+
+#[derive(Component)]
+struct Tower;
 
 // setup rapier demo scene
 fn setup_world(
@@ -60,6 +65,7 @@ fn setup_world(
     let ground_height = 0.5;
     commands
         .spawn()
+        .insert(Ground)
         .insert(Transform::from_xyz(0.0, -ground_height, 0.0))
         .insert_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(bevy::prelude::shape::Plane {
@@ -78,6 +84,7 @@ fn setup_world(
     let cube_size = 0.5;
     commands
         .spawn()
+        .insert(Tower)
         .insert(Collider::cuboid(cube_size, cube_size, cube_size))
         .insert_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
@@ -125,7 +132,7 @@ fn spawn_enemies_interval(
                         size: enemy_config.size * 2.0
                     })),
                     material: materials.add(Color::rgb(0.1, 0.1, 0.4).into()),
-                    transform: Transform::from_xyz(18.0, 0.25, 16.0),
+                    transform: Transform::from_xyz(18.0, enemy_config.size, 16.0),
                     ..Default::default()
                 });
         }
