@@ -85,7 +85,6 @@ fn setup_world(
     commands
         .spawn()
         .insert(Tower)
-        .insert(Collider::cuboid(cube_size, cube_size, cube_size))
         .insert_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(bevy::prelude::shape::Box {
                 min_x: -cube_size,
@@ -98,6 +97,19 @@ fn setup_world(
             material: materials.add(Color::rgb(1., 0., 0.).into()),
             transform: Transform::from_xyz(0.0, cube_size, 0.0),
             ..Default::default()
+        })
+        .insert(Collider::cuboid(cube_size, cube_size, cube_size))
+        .with_children(|parent| {
+            // sensor range
+            let sensor_range = cube_size * 10.0;
+            parent
+            .spawn()
+            // NOTE: there is an issue where the Global Transform isn't being used by rapier (https://github.com/dimforge/bevy_rapier/issues/172)
+            // So that means, if we move the parent transform around, the collider won't get syncd because it's only using the Transform (the child one)
+            // For now, we'll just hard code it at the origin. If we want to test / make updates, we'll have to update the Transform (the child one)
+            .insert_bundle((Transform::from_xyz(0.0, sensor_range, 0.0), GlobalTransform::default()))
+            .insert(Collider::cuboid(sensor_range, sensor_range, sensor_range))
+            .insert(Sensor(true));
         });
 }
 
