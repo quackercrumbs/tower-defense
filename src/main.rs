@@ -74,15 +74,11 @@ fn setup_world(
             })),
             material: materials.add(Color::rgb(0.5, 0.5, 0.).into()),
             ..Default::default()
-        })
-        .with_children(|parent| {
-            parent.spawn()
-            .insert(Collider::cuboid(ground_size, ground_height, ground_size))
-            .insert(Transform::from_xyz(0.0, -ground_height, 0.0));
         });
 
     // Create castle, use cube
     let cube_size = 0.5;
+    let sensor_range = cube_size * 10.0;
     commands
         .spawn()
         .insert(Tower)
@@ -91,7 +87,7 @@ fn setup_world(
                 min_x: -cube_size,
                 max_x: cube_size,
                 min_y: -cube_size,
-                max_y: cube_size * 10.,
+                max_y: cube_size * 5.,
                 min_z: -cube_size,
                 max_z: cube_size,
             })),
@@ -100,22 +96,9 @@ fn setup_world(
             ..Default::default()
         })
         // probably don't need this collider
-        .insert(Collider::cuboid(cube_size, cube_size, cube_size))
-        .with_children(|parent| {
-            // sensor range
-            let sensor_range = cube_size * 10.0;
-            parent
-            .spawn()
-            // NOTE: there is an issue where the Global Transform isn't being used by rapier (https://github.com/dimforge/bevy_rapier/issues/172)
-            // So that means, if we move the parent transform around, the collider won't get syncd because it's only using the Transform (the child one)
-            // For now, we'll just hard code it at the origin. If we want to test / make updates, we'll have to update the Transform (the child one)
-            .insert_bundle((Transform::from_xyz(0.0, sensor_range, 0.0), GlobalTransform::default()))
-            .insert(Collider::cuboid(sensor_range, sensor_range, sensor_range))
-            .insert(ActiveEvents::COLLISION_EVENTS)
-            .insert(ActiveCollisionTypes::STATIC_STATIC)
-
-            .insert(Sensor(true));
-        });
+        .insert(Collider::cuboid(sensor_range, sensor_range, sensor_range))
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(ActiveCollisionTypes::STATIC_STATIC);
 }
 
 struct EnemySpawnTimer(Timer);
