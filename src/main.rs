@@ -18,7 +18,7 @@ fn main() {
         .insert_resource(EnemyConfiguration{ max_count: 1, size: 0.25, speed: 3.0, distance_from_target: 1.5 })
         .add_system(spawn_enemies_interval)
         .add_system(move_enemies)
-        .add_system(test_collider_active_events)
+        .add_system(check_for_new_focus_target)
         .run();
 }
 
@@ -27,6 +27,9 @@ struct Ground;
 
 #[derive(Component)]
 struct Tower;
+
+#[derive(Component)]
+struct FocusTarget(Option<Entity>);
 
 // setup rapier demo scene
 fn setup_world(
@@ -95,7 +98,8 @@ fn setup_world(
             transform: Transform::from_xyz(0.0, cube_size, 0.0),
             ..Default::default()
         })
-        // probably don't need this collider
+        .insert(FocusTarget(None))
+        .insert(CollidingEntities::default())
         .insert(Collider::cuboid(sensor_range, sensor_range, sensor_range))
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(ActiveCollisionTypes::STATIC_STATIC);
@@ -156,10 +160,16 @@ fn move_enemies(
     })
 }
 
-fn test_collider_active_events(
-    mut collision_events: EventReader<CollisionEvent>,
+fn check_for_new_focus_target(
+    mut towers: Query<(Entity, &CollidingEntities, &mut FocusTarget), With<Tower>>,
 ) {
-    for collision_event in collision_events.iter() {
-        println!("Recieved collision event: {:?}", collision_event);
+    for mut tower in towers.iter_mut() {
+        // check if tower is already focusing one enemy
+        if tower.2.0.is_none() {
+            for enemy in tower.1.iter() {
+                // todo: find enemy for tower to focus (by some priority)
+                tower.2.0 = Some(enemy);
+            }
+        }
     }
 }
