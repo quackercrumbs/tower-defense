@@ -15,9 +15,10 @@ fn main() {
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_startup_system(setup_world)
         .insert_resource(EnemySpawnTimer(Timer::from_seconds(2.0, true)))
-        .insert_resource(EnemyConfiguration{ max_count: 1, size: 0.25, speed: 3.0 })
+        .insert_resource(EnemyConfiguration{ max_count: 1, size: 0.25, speed: 3.0, distance_from_target: 1.5 })
         .add_system(spawn_enemies_interval)
         .add_system(move_enemies)
+        .add_system(test_collider_active_events)
         .run();
 }
 
@@ -98,6 +99,7 @@ fn setup_world(
             transform: Transform::from_xyz(0.0, cube_size, 0.0),
             ..Default::default()
         })
+        // probably don't need this collider
         .insert(Collider::cuboid(cube_size, cube_size, cube_size))
         .with_children(|parent| {
             // sensor range
@@ -109,6 +111,9 @@ fn setup_world(
             // For now, we'll just hard code it at the origin. If we want to test / make updates, we'll have to update the Transform (the child one)
             .insert_bundle((Transform::from_xyz(0.0, sensor_range, 0.0), GlobalTransform::default()))
             .insert(Collider::cuboid(sensor_range, sensor_range, sensor_range))
+            .insert(ActiveEvents::COLLISION_EVENTS)
+            .insert(ActiveCollisionTypes::STATIC_STATIC)
+
             .insert(Sensor(true));
         });
 }
@@ -120,6 +125,7 @@ struct EnemyConfiguration {
     max_count: usize,
     size: f32,
     speed: f32,
+    distance_from_target: f32,
 }
 #[derive(Component)]
 struct Enemy;
@@ -160,9 +166,17 @@ fn move_enemies(
     enemies.for_each_mut(|mut enemy| {
         let distance_vector = target.sub(enemy.translation);
         let len = distance_vector.length();
-        if len >= 5. {
+        if len >= enemy_config.distance_from_target {
             let new_pos = distance_vector.normalize().mul(enemy_config.speed * time.delta_seconds());
             enemy.translation = enemy.translation.add(new_pos);
         }
     })
+}
+
+fn test_collider_active_events(
+    mut collision_events: EventReader<CollisionEvent>,
+) {
+    for collision_event in collision_events.iter() {
+        println!("Recieved collision event: {:?}", collision_event);
+    }
 }
