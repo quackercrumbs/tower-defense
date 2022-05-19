@@ -28,7 +28,7 @@ struct Ground;
 #[derive(Component)]
 struct Tower;
 
-#[derive(Component)]
+#[derive(Component, Inspectable)]
 struct FocusTarget(Option<Entity>);
 
 // setup rapier demo scene
@@ -160,16 +160,28 @@ fn move_enemies(
     })
 }
 
+/**
+ * Tries to find the "highest" priority target. (todo: define highest priority)
+ */
 fn check_for_new_focus_target(
     mut towers: Query<(Entity, &CollidingEntities, &mut FocusTarget), With<Tower>>,
+    enemy: Query<&Enemy>,
 ) {
     for mut tower in towers.iter_mut() {
-        // check if tower is already focusing one enemy
-        if tower.2.0.is_none() {
-            for enemy in tower.1.iter() {
-                // todo: find enemy for tower to focus (by some priority)
-                tower.2.0 = Some(enemy);
+        // check if tower is already focusing one enemy that is still in range
+        let current_target = tower.2.0.filter(|current_target| {
+            tower.1.contains(current_target.clone())
+        });
+        let current_target = current_target.or_else(|| {
+            for entity in tower.1.iter() {
+                // check if entity is an enemy
+                if enemy.contains(entity) {
+                    return Some(entity);
+                }
             }
-        }
+            return None;
+        });
+
+        tower.2.0 = current_target;
     }
 }

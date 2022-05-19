@@ -1,9 +1,9 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::{WorldInspectorPlugin, widgets::ResourceInspector, Inspectable, InspectorPlugin};
+use bevy_inspector_egui::{WorldInspectorPlugin, widgets::ResourceInspector, Inspectable, InspectorPlugin, RegisterInspectable};
 use bevy_inspector_egui_rapier::InspectableRapierPlugin;
 use  bevy_rapier3d::render::RapierDebugRenderPlugin;
 
-use crate::EnemyConfiguration;
+use crate::{EnemyConfiguration, FocusTarget};
 
 pub struct DebugPlugin;
 
@@ -20,6 +20,7 @@ impl Plugin for DebugPlugin {
             app.add_plugin(WorldInspectorPlugin::new());
             app.add_plugin(InspectableRapierPlugin);
             app.add_plugin(InspectorPlugin::<Data>::new());
+            app.register_inspectable::<FocusTarget>();
         }
     }
 
