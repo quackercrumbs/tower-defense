@@ -19,14 +19,20 @@ fn main() {
         .add_system(spawn_enemies_interval)
         .add_system(move_enemies)
         .add_system(check_for_new_focus_target)
+        .add_system(tower_attack_focus_target)
         .run();
 }
 
+#[derive(Component, Inspectable)]
+struct Health(i64);
 #[derive(Component)]
 struct Ground;
 
 #[derive(Component)]
 struct Tower;
+
+#[derive(Component)]
+struct TowerWeaponTimer(Timer);
 
 #[derive(Component, Inspectable)]
 struct FocusTarget(Option<Entity>);
@@ -98,6 +104,7 @@ fn setup_world(
             transform: Transform::from_xyz(0.0, cube_size, 0.0),
             ..Default::default()
         })
+        .insert(TowerWeaponTimer(Timer::from_seconds(0.5, true)))
         .insert(FocusTarget(None))
         .insert(CollidingEntities::default())
         .insert(Collider::cuboid(sensor_range, sensor_range, sensor_range))
@@ -131,6 +138,7 @@ fn spawn_enemies_interval(
             info!("Spawn enemy");
             commands.spawn()
                 .insert(Enemy)
+                .insert(Health(100))
                 .insert(Collider::cuboid(enemy_config.size, enemy_config.size, enemy_config.size))
                 .insert_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube {
@@ -158,6 +166,32 @@ fn move_enemies(
             enemy.translation = enemy.translation.add(new_pos);
         }
     })
+}
+
+fn tower_attack_focus_target(
+    mut tower: Query<(&FocusTarget, &mut TowerWeaponTimer), With<Tower>>,
+    mut enemy: Query<&mut Health, With<Enemy>>,
+    mut commands: Commands,
+    time: Res<Time>,
+) {
+    tower.iter_mut().for_each(|(focus_target, mut weapon_timer)| {
+        // check to shoot focus target
+        focus_target.0.iter().for_each(|&target_id| {
+            // check if enemy exists and then hit
+            enemy.get_mut(target_id).iter_mut().for_each(|health| {
+                // check if we can shoot at enemy again
+                if weapon_timer.0.tick(time.delta()).just_finished() {
+                    health.0 = health.0 - 10;
+
+                    // check if we should despawn enemy
+                    if health.0 <= 0 {
+                        info!("Enemy ded xD {:?}", target_id);
+                        commands.entity(target_id).despawn();
+                    }
+                }
+            });
+        })
+    });
 }
 
 /**
