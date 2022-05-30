@@ -20,6 +20,7 @@ fn main() {
         .add_system(move_enemies)
         .add_system(check_for_new_focus_target)
         .add_system(tower_attack_focus_target)
+        .add_system(remove_the_dead)
         .run();
 }
 
@@ -36,6 +37,9 @@ struct TowerWeaponTimer(Timer);
 
 #[derive(Component, Inspectable)]
 struct FocusTarget(Option<Entity>);
+
+#[derive(Component)]
+struct Dead;
 
 // setup rapier demo scene
 fn setup_world(
@@ -169,8 +173,8 @@ fn move_enemies(
 }
 
 fn tower_attack_focus_target(
-    mut tower: Query<(&FocusTarget, &mut TowerWeaponTimer), With<Tower>>,
-    mut enemy: Query<&mut Health, With<Enemy>>,
+    mut tower: Query<(&FocusTarget, &mut TowerWeaponTimer), (With<Tower>, Without<Dead>)>,
+    mut enemy: Query<&mut Health, (With<Enemy>, Without<Dead>)>,
     mut commands: Commands,
     time: Res<Time>,
 ) {
@@ -186,7 +190,8 @@ fn tower_attack_focus_target(
                     // check if we should despawn enemy
                     if health.0 <= 0 {
                         info!("Enemy ded xD {:?}", target_id);
-                        commands.entity(target_id).despawn();
+                        // commands.entity(target_id).despawn();
+                        commands.entity(target_id).insert(Dead);
                     }
                 }
             });
@@ -194,12 +199,26 @@ fn tower_attack_focus_target(
     });
 }
 
+/* I wonder if there is any performance gain for having indivdual systems handle dead entities?
+   Wonder if there is any "blocking" this may cause.
+*/
+fn remove_the_dead(
+    mut commands: Commands,
+    mut things_to_die: Query<(Entity, &Dead)>,
+) {
+    // its dead xD
+    things_to_die.iter().for_each(|(e, _)| {
+        info!("Removing ded");
+        commands.entity(e).despawn();
+    })
+}
+
 /**
  * Tries to find the "highest" priority target. (todo: define highest priority)
  */
 fn check_for_new_focus_target(
     mut towers: Query<(Entity, &CollidingEntities, &mut FocusTarget), With<Tower>>,
-    enemy: Query<&Enemy>,
+    enemy: Query<&Enemy, Without<Dead>>,
 ) {
     for mut tower in towers.iter_mut() {
         // check if tower is already focusing one enemy that is still in range
