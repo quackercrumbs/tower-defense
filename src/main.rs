@@ -19,6 +19,7 @@ fn main() {
         .add_system(spawn_enemies_interval)
         .add_system(move_enemies)
         .add_system(enemy_check_for_focus_target)
+        .add_system(enemy_attack_focus_target)
         .add_system(tower_check_for_new_focus_target)
         .add_system(tower_attack_focus_target)
         .add_system(remove_the_dead)
@@ -34,7 +35,7 @@ struct Ground;
 struct Tower;
 
 #[derive(Component)]
-struct TowerWeaponTimer(Timer);
+struct WeaponTimer(Timer);
 
 #[derive(Component, Inspectable)]
 struct FocusTarget(Option<Entity>);
@@ -109,7 +110,8 @@ fn setup_world(
             transform: Transform::from_xyz(0.0, cube_size, 0.0),
             ..Default::default()
         })
-        .insert(TowerWeaponTimer(Timer::from_seconds(0.5, true)))
+        .insert(Health(10000))
+        .insert(WeaponTimer(Timer::from_seconds(0.5, true)))
         .insert(FocusTarget(None))
         .insert(CollidingEntities::default())
         .insert(Collider::cuboid(sensor_range, sensor_range, sensor_range))
@@ -147,6 +149,7 @@ fn spawn_enemies_interval(
                 .insert(Collider::cuboid(enemy_config.size, enemy_config.size, enemy_config.size))
                 .insert(FocusTarget(None))
                 .insert(CollidingEntities::default())
+                .insert(WeaponTimer(Timer::from_seconds(2.0, true)))
                 .insert_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube {
                         size: enemy_config.size * 2.0
@@ -176,7 +179,7 @@ fn move_enemies(
 }
 
 fn tower_attack_focus_target(
-    mut tower: Query<(&FocusTarget, &mut TowerWeaponTimer), (With<Tower>, Without<Dead>)>,
+    mut tower: Query<(&FocusTarget, &mut WeaponTimer), (With<Tower>, Without<Dead>)>,
     mut enemy: Query<&mut Health, (With<Enemy>, Without<Dead>)>,
     mut commands: Commands,
     time: Res<Time>,
@@ -265,3 +268,31 @@ fn enemy_check_for_focus_target(
         focus_target.0 = current_target;
     }
 }
+
+fn enemy_attack_focus_target(
+    mut tower: Query<&mut Health, (With<Tower>, Without<Dead>)>,
+    mut enemy: Query<(&FocusTarget, &mut WeaponTimer), (With<Enemy>, Without<Dead>)>,
+    mut commands: Commands,
+    time: Res<Time>,
+) {
+    enemy.iter_mut().for_each(|(focus_target, mut weapon_timer)| {
+        // check to shoot focus target
+        focus_target.0.iter().for_each(|&target_id| {
+            // check if enemy exists and then hit
+            tower.get_mut(target_id).iter_mut().for_each(|health| {
+                // check if we can shoot at enemy again
+                if weapon_timer.0.tick(time.delta()).just_finished() {
+                    health.0 = health.0 - 10;
+
+                    // check if we should despawn enemy
+                    if health.0 <= 0 {
+                        info!("Tower ded xD {:?}", target_id);
+                        // commands.entity(target_id).despawn();
+                        commands.entity(target_id).insert(Dead);
+                    }
+                }
+            });
+        })
+    });
+}
+
