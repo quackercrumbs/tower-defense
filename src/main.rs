@@ -18,6 +18,7 @@ fn main() {
         .insert_resource(EnemyConfiguration{ max_count: 1, size: 0.25, speed: 3.0, distance_from_target: 1.5 })
         .add_system(spawn_enemies_interval)
         .add_system(move_enemies)
+        .add_system(enemy_check_for_focus_target)
         .add_system(tower_check_for_new_focus_target)
         .add_system(tower_attack_focus_target)
         .add_system(remove_the_dead)
@@ -144,6 +145,8 @@ fn spawn_enemies_interval(
                 .insert(Enemy)
                 .insert(Health(100))
                 .insert(Collider::cuboid(enemy_config.size, enemy_config.size, enemy_config.size))
+                .insert(FocusTarget(None))
+                .insert(CollidingEntities::default())
                 .insert_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube {
                         size: enemy_config.size * 2.0
@@ -236,5 +239,28 @@ fn tower_check_for_new_focus_target(
         });
 
         tower.2.0 = current_target;
+    }
+}
+
+
+fn enemy_check_for_focus_target(
+    towers: Query<Entity, (With<Tower>, Without<Dead>)>,
+    // idk if colliding entities is the correct component to determine an emeies focus target. (because a tower can have a large collider zone which will mess with an enemies colliding bodies component)
+    mut enemies: Query<(Entity, &CollidingEntities, &mut FocusTarget), (With<Enemy>, Without<Dead>)>,
+) {
+    for mut enemy in enemies.iter_mut() {
+        // check if the tower being focused is still valid ((not dead and not despawned))
+        let current_target = enemy.2.0.filter(|current_target| {
+            enemy.1.contains(current_target.clone())
+        });
+        let current_target = current_target.or_else(|| {
+            for entity in enemy.1.iter() {
+                if towers.contains(entity) {
+                    return Some(entity);
+                }
+            }
+            return None;
+        });
+        enemy.2.0 = current_target;
     }
 }
