@@ -18,7 +18,7 @@ fn main() {
         .insert_resource(EnemyConfiguration{ max_count: 1, size: 0.25, speed: 3.0, distance_from_target: 1.5 })
         .add_system(spawn_enemies_interval)
         .add_system(move_enemies)
-        .add_system(check_for_new_focus_target)
+        .add_system(tower_check_for_new_focus_target)
         .add_system(tower_attack_focus_target)
         .add_system(remove_the_dead)
         .run();
@@ -216,7 +216,7 @@ fn remove_the_dead(
 /**
  * Tries to find the "highest" priority target. (todo: define highest priority)
  */
-fn check_for_new_focus_target(
+fn tower_check_for_new_focus_target(
     mut towers: Query<(Entity, &CollidingEntities, &mut FocusTarget), With<Tower>>,
     enemy: Query<&Enemy, Without<Dead>>,
 ) {
