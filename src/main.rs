@@ -220,16 +220,16 @@ fn remove_the_dead(
  * Tries to find the "highest" priority target. (todo: define highest priority)
  */
 fn tower_check_for_new_focus_target(
-    mut towers: Query<(Entity, &CollidingEntities, &mut FocusTarget), With<Tower>>,
+    mut towers: Query<(&CollidingEntities, &mut FocusTarget), With<Tower>>,
     enemy: Query<&Enemy, Without<Dead>>,
 ) {
-    for mut tower in towers.iter_mut() {
+    for (colliding_ents, mut focus_target) in towers.iter_mut() {
         // check if tower is already focusing one enemy that is still in range
-        let current_target = tower.2.0.filter(|current_target| {
-            tower.1.contains(current_target.clone())
-        });
-        let current_target = current_target.or_else(|| {
-            for entity in tower.1.iter() {
+        let current_target = focus_target.0.filter(|current_target| {
+            colliding_ents.contains(current_target.clone())
+        }).or_else(|| {
+            // pick a valid focus target
+            for entity in colliding_ents.iter() {
                 // check if entity is an enemy
                 if enemy.contains(entity) {
                     return Some(entity);
@@ -238,7 +238,7 @@ fn tower_check_for_new_focus_target(
             return None;
         });
 
-        tower.2.0 = current_target;
+        focus_target.0 = current_target;
     }
 }
 
@@ -246,21 +246,22 @@ fn tower_check_for_new_focus_target(
 fn enemy_check_for_focus_target(
     towers: Query<Entity, (With<Tower>, Without<Dead>)>,
     // idk if colliding entities is the correct component to determine an emeies focus target. (because a tower can have a large collider zone which will mess with an enemies colliding bodies component)
-    mut enemies: Query<(Entity, &CollidingEntities, &mut FocusTarget), (With<Enemy>, Without<Dead>)>,
+    mut enemies: Query<(&CollidingEntities, &mut FocusTarget), (With<Enemy>, Without<Dead>)>,
 ) {
-    for mut enemy in enemies.iter_mut() {
+    for (colliding_ents, mut focus_target) in enemies.iter_mut() {
         // check if the tower being focused is still valid ((not dead and not despawned))
-        let current_target = enemy.2.0.filter(|current_target| {
-            enemy.1.contains(current_target.clone())
-        });
-        let current_target = current_target.or_else(|| {
-            for entity in enemy.1.iter() {
+        let current_target = focus_target.0.filter(|current_target| {
+            colliding_ents.contains(current_target.clone())
+        }).or_else(|| {
+            // pick a valid focus target
+            for entity in colliding_ents.iter() {
+                // check if colliding ent is a tower
                 if towers.contains(entity) {
                     return Some(entity);
                 }
             }
             return None;
         });
-        enemy.2.0 = current_target;
+        focus_target.0 = current_target;
     }
 }
