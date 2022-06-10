@@ -3,6 +3,7 @@ use bevy_flycam::PlayerPlugin;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier3d::prelude::*;
 use std::ops::{Sub, Mul, Add};
+use rand::prelude::*;
 
 mod debug;
 use debug::DebugPlugin;
@@ -131,6 +132,18 @@ struct EnemyConfiguration {
 #[derive(Component)]
 struct Enemy;
 
+fn gen_random_coor(radius: f32) -> (f32, f32) {
+    let mut rng = rand::thread_rng();
+    let x: f32 = rng.gen_range(-radius..=radius);
+    let z_sign: f32 = if rng.gen_range(0..=1) == 0 {
+        1.
+    } else {
+        -1.
+    };
+    let z: f32 = (radius.powi(2) - x.powi(2)).sqrt() * z_sign;
+    (x, z)
+}
+
 fn spawn_enemies_interval(
     time: Res<Time>,
     enemy_config: Res<EnemyConfiguration>,
@@ -140,9 +153,12 @@ fn spawn_enemies_interval(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
+
     if  enemies.iter().len() < enemy_config.max_count {
         if enemy_timer.0.tick(time.delta()).just_finished() {
-            info!("Spawn enemy");
+            let (x, z) = gen_random_coor(22.0);
+
+            info!("Spawn enemy x={} z={}", x, z);
             commands.spawn()
                 .insert(Enemy)
                 .insert(Health(100))
@@ -155,7 +171,7 @@ fn spawn_enemies_interval(
                         size: enemy_config.size * 2.0
                     })),
                     material: materials.add(Color::rgb(0.1, 0.1, 0.4).into()),
-                    transform: Transform::from_xyz(18.0, enemy_config.size, 16.0),
+                    transform: Transform::from_xyz(x, enemy_config.size, z),
                     ..Default::default()
                 });
         }

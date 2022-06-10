@@ -3339,6 +3339,7 @@ dependencies = [
  "bevy-inspector-egui-rapier",
  "bevy_flycam",
  "bevy_rapier3d",
+ "rand",
 ]
 
 [[package]]
